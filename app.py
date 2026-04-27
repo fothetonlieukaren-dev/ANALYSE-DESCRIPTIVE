@@ -2,9 +2,9 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 
-# Configuration de la page
 st.set_page_config(
     page_title="Gestion des Ventes - INF232 EC2",
     page_icon="🛍️",
@@ -12,11 +12,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Création du dossier data si inexistant
 if not os.path.exists('data'):
     os.makedirs('data')
 
-# Initialisation de la base de données
 def init_database():
     conn = sqlite3.connect('data/ventes.db')
     c = conn.cursor()
@@ -56,10 +54,8 @@ def init_database():
     conn.commit()
     conn.close()
 
-# Initialiser la base de données
 init_database()
 
-# Sidebar avec navigation
 with st.sidebar:
     st.title("📋 INF232 EC2")
     st.markdown("---")
@@ -67,20 +63,35 @@ with st.sidebar:
     st.info("""
     **🎓 TP Analyse de données**
     
-    **Fonctionnalités :**
     - 📊 Collecte de données
     - 📈 Analyse descriptive
     - 🔍 Classification
-    - 📉 Réduction dimensionnalité
+    - 📉 Réduction dimension
     """)
     
     st.markdown("---")
+    st.subheader("📂 Navigation")
     
-    # Données exemple
-    if st.button("📥 Charger données démo"):
+    if st.button("🏠 Accueil", use_container_width=True):
+        st.switch_page("app.py")
+    
+    if st.button("📊 Collecte", use_container_width=True):
+        st.switch_page("page/collecte.py")
+    
+    if st.button("📈 Analyse", use_container_width=True):
+        st.switch_page("page/analyse.py")
+    
+    if st.button("🔍 Classification", use_container_width=True):
+        st.switch_page("page/classification.py")
+    
+    if st.button("📉 Réduction", use_container_width=True):
+        st.switch_page("page/reduction.py")
+    
+    st.markdown("---")
+    
+    if st.button("📥 Charger données démo", use_container_width=True):
         conn = sqlite3.connect('data/ventes.db')
         c = conn.cursor()
-        
         nb = pd.read_sql("SELECT COUNT(*) as count FROM produits", conn)['count'][0]
         
         if nb == 0:
@@ -114,18 +125,15 @@ with st.sidebar:
             for client in clients_demo:
                 c.execute("INSERT INTO clients (nom, email, telephone, ville, region, type_client) VALUES (?, ?, ?, ?, ?, ?)", client)
             
-            import random
-            from datetime import datetime, timedelta
-            
             date_debut = datetime.now() - timedelta(days=30)
             
             for i in range(50):
                 produit_id = random.randint(1, 10)
-                client_nom = random.choice([c[0] for c in clients_demo])
+                client_nom = random.choice([cl[0] for cl in clients_demo])
                 quantite = random.randint(1, 5)
                 remise = random.choice([0, 0, 0, 5, 10])
                 mode = random.choice(["Espèces", "Mobile Money", "Carte bancaire"])
-                region = random.choice([c[4] for c in clients_demo])
+                region = random.choice([cl[4] for cl in clients_demo])
                 vendeur = random.choice(["Alice", "Bob", "Charlie"])
                 
                 prix_base = [p[2] for p in produits_demo][produit_id-1]
@@ -142,23 +150,18 @@ with st.sidebar:
             st.rerun()
         else:
             st.warning("Des données existent déjà !")
-        
         conn.close()
 
-# Contenu principal
 st.title("🛍️ Application de Gestion des Ventes")
 st.markdown("---")
 
-# Métriques en temps réel
 col1, col2, col3, col4 = st.columns(4)
 
 conn = sqlite3.connect('data/ventes.db')
-
 total_ventes = pd.read_sql("SELECT COUNT(*) as count FROM ventes", conn)['count'][0]
 ca_total = pd.read_sql("SELECT COALESCE(SUM(prix_vente * quantite), 0) as total FROM ventes", conn)['total'][0]
 nb_produits = pd.read_sql("SELECT COUNT(*) as count FROM produits", conn)['count'][0]
 nb_clients = pd.read_sql("SELECT COUNT(*) as count FROM clients", conn)['count'][0]
-
 conn.close()
 
 with col1:
@@ -172,44 +175,34 @@ with col4:
 
 st.markdown("---")
 
-# Navigation avec st.page_link (FONCTIONNE SUR STREAMLIT CLOUD)
 st.header("📋 Accéder aux modules")
-st.write("Cliquez sur les liens ci-dessous pour accéder aux différentes pages :")
+st.write("Utilisez les boutons dans la barre latérale gauche pour naviguer.")
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.markdown("""
-    ### 📊 Collecte
-    Enregistrer ventes, produits et clients
-    """)
-    st.page_link("pages/1_📊_Collecte_Données.py", label="📊 Collecte de données", icon="📊")
+    st.markdown("### 📊 Collecte")
+    if st.button("📊 Ouvrir", key="b1", use_container_width=True):
+        st.switch_page("page/collecte.py")
 
 with col2:
-    st.markdown("""
-    ### 📈 Analyse
-    Visualisations et statistiques
-    """)
-    st.page_link("pages/2_📈_Analyse_Descriptive.py", label="📈 Analyse descriptive", icon="📈")
+    st.markdown("### 📈 Analyse")
+    if st.button("📈 Ouvrir", key="b2", use_container_width=True):
+        st.switch_page("page/analyse.py")
 
 with col3:
-    st.markdown("""
-    ### 🔍 Classification
-    Segmentation clients
-    """)
-    st.page_link("pages/3_🔍_Classification.py", label="🔍 Classification", icon="🔍")
+    st.markdown("### 🔍 Classification")
+    if st.button("🔍 Ouvrir", key="b3", use_container_width=True):
+        st.switch_page("page/classification.py")
 
 with col4:
-    st.markdown("""
-    ### 📉 Réduction
-    PCA et analyse
-    """)
-    st.page_link("pages/4_📉_Réduction_Dimension.py", label="📉 Réduction dimension", icon="📉")
+    st.markdown("### 📉 Réduction")
+    if st.button("📉 Ouvrir", key="b4", use_container_width=True):
+        st.switch_page("page/reduction.py")
 
 st.markdown("---")
 
-# Dernières ventes
-st.subheader("📋 Dernières ventes enregistrées")
+st.subheader("📋 Dernières ventes")
 
 conn = sqlite3.connect('data/ventes.db')
 dernieres_ventes = pd.read_sql("""
@@ -224,9 +217,6 @@ dernieres_ventes = pd.read_sql("""
 conn.close()
 
 if not dernieres_ventes.empty:
-    dernieres_ventes['total'] = dernieres_ventes['total'].apply(lambda x: f"{x:,.0f} FCFA")
-    dernieres_ventes['prix_vente'] = dernieres_ventes['prix_vente'].apply(lambda x: f"{x:,.0f} FCFA")
-    
     st.dataframe(dernieres_ventes, use_container_width=True)
 else:
-    st.info("ℹ️ Aucune vente enregistrée. Commencez par ajouter des données ou chargez les données de démonstration.")
+    st.info("ℹ️ Cliquez sur 'Charger données démo' dans la barre latérale.")
