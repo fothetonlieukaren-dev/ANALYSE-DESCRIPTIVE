@@ -1,4 +1,3 @@
-
 import streamlit as st
 import sqlite3
 import pandas as pd
@@ -22,7 +21,6 @@ def init_database():
     conn = sqlite3.connect('data/ventes.db')
     c = conn.cursor()
     
-    # Table des produits
     c.execute('''CREATE TABLE IF NOT EXISTS produits
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   nom TEXT NOT NULL,
@@ -32,7 +30,6 @@ def init_database():
                   stock INTEGER NOT NULL,
                   date_ajout TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     
-    # Table des ventes
     c.execute('''CREATE TABLE IF NOT EXISTS ventes
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   produit_id INTEGER NOT NULL,
@@ -46,7 +43,6 @@ def init_database():
                   vendeur TEXT,
                   FOREIGN KEY (produit_id) REFERENCES produits (id))''')
     
-    # Table des clients
     c.execute('''CREATE TABLE IF NOT EXISTS clients
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   nom TEXT NOT NULL,
@@ -63,7 +59,7 @@ def init_database():
 # Initialiser la base de données
 init_database()
 
-# Sidebar
+# Sidebar avec navigation
 with st.sidebar:
     st.title("📋 INF232 EC2")
     st.markdown("---")
@@ -81,15 +77,13 @@ with st.sidebar:
     st.markdown("---")
     
     # Données exemple
-    if st.button("📥 Charger des données de démonstration"):
+    if st.button("📥 Charger données démo"):
         conn = sqlite3.connect('data/ventes.db')
         c = conn.cursor()
         
-        # Vérifier si déjà des données
         nb = pd.read_sql("SELECT COUNT(*) as count FROM produits", conn)['count'][0]
         
         if nb == 0:
-            # Produits exemple
             produits_demo = [
                 ("Smartphone Pro Max", "Électronique", 250000, 180000, 25),
                 ("Riz Basmati 5kg", "Alimentation", 8500, 6000, 100),
@@ -106,7 +100,6 @@ with st.sidebar:
             for prod in produits_demo:
                 c.execute("INSERT INTO produits (nom, categorie, prix_unitaire, cout_revient, stock) VALUES (?, ?, ?, ?, ?)", prod)
             
-            # Clients exemple
             clients_demo = [
                 ("Marie Dupont", "marie@email.com", "699887766", "Yaoundé", "Centre", "Particulier"),
                 ("Tech Solutions SARL", "tech@email.com", "677665544", "Douala", "Littoral", "Entreprise"),
@@ -121,9 +114,8 @@ with st.sidebar:
             for client in clients_demo:
                 c.execute("INSERT INTO clients (nom, email, telephone, ville, region, type_client) VALUES (?, ?, ?, ?, ?, ?)", client)
             
-            # Ventes exemple
-            from datetime import datetime, timedelta
             import random
+            from datetime import datetime, timedelta
             
             date_debut = datetime.now() - timedelta(days=30)
             
@@ -136,8 +128,7 @@ with st.sidebar:
                 region = random.choice([c[4] for c in clients_demo])
                 vendeur = random.choice(["Alice", "Bob", "Charlie"])
                 
-                # Prix du produit
-                prix_base = [p[2] for p in produits_demo if p[0] == [p[0] for p in produits_demo][produit_id-1]][0]
+                prix_base = [p[2] for p in produits_demo][produit_id-1]
                 prix_final = prix_base * (1 - remise/100)
                 
                 date_vente = date_debut + timedelta(days=random.randint(0, 30))
@@ -181,9 +172,9 @@ with col4:
 
 st.markdown("---")
 
-# Navigation
+# Navigation avec st.page_link (FONCTIONNE SUR STREAMLIT CLOUD)
 st.header("📋 Accéder aux modules")
-st.write("Cliquez sur un bouton pour accéder aux différentes fonctionnalités :")
+st.write("Cliquez sur les liens ci-dessous pour accéder aux différentes pages :")
 
 col1, col2, col3, col4 = st.columns(4)
 
@@ -192,32 +183,28 @@ with col1:
     ### 📊 Collecte
     Enregistrer ventes, produits et clients
     """)
-    if st.button("📊 Collecte de données", use_container_width=True, key="btn_collecte"):
-        st.switch_page("pages/1_📊_Collecte_Données.py")
+    st.page_link("pages/1_📊_Collecte_Données.py", label="📊 Collecte de données", icon="📊")
 
 with col2:
     st.markdown("""
     ### 📈 Analyse
     Visualisations et statistiques
     """)
-    if st.button("📈 Analyse descriptive", use_container_width=True, key="btn_analyse"):
-        st.switch_page("pages/2_📈_Analyse_Descriptive.py")
+    st.page_link("pages/2_📈_Analyse_Descriptive.py", label="📈 Analyse descriptive", icon="📈")
 
 with col3:
     st.markdown("""
     ### 🔍 Classification
-    Segmentation clients et produits
+    Segmentation clients
     """)
-    if st.button("🔍 Classification", use_container_width=True, key="btn_classif"):
-        st.switch_page("pages/3_🔍_Classification.py")
+    st.page_link("pages/3_🔍_Classification.py", label="🔍 Classification", icon="🔍")
 
 with col4:
     st.markdown("""
     ### 📉 Réduction
-    PCA et analyse dimensionnelle
+    PCA et analyse
     """)
-    if st.button("📉 Réduction dimension", use_container_width=True, key="btn_pca"):
-        st.switch_page("pages/4_📉_Réduction_Dimension.py")
+    st.page_link("pages/4_📉_Réduction_Dimension.py", label="📉 Réduction dimension", icon="📉")
 
 st.markdown("---")
 
@@ -237,17 +224,9 @@ dernieres_ventes = pd.read_sql("""
 conn.close()
 
 if not dernieres_ventes.empty:
-    # Formater les colonnes
     dernieres_ventes['total'] = dernieres_ventes['total'].apply(lambda x: f"{x:,.0f} FCFA")
     dernieres_ventes['prix_vente'] = dernieres_ventes['prix_vente'].apply(lambda x: f"{x:,.0f} FCFA")
     
     st.dataframe(dernieres_ventes, use_container_width=True)
 else:
     st.info("ℹ️ Aucune vente enregistrée. Commencez par ajouter des données ou chargez les données de démonstration.")
-
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center'>
-    <p>INF232 EC2 - Analyse de données | Application Streamlit</p>
-</div>
-""", unsafe_allow_html=True)
